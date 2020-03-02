@@ -2,6 +2,26 @@
 from openpyxl import load_workbook as load, Workbook
 from functions import findRowNumber, insertRow
 
+def findRowNumber(ws, station):
+    test = ''
+    #print(rows[i-1])
+    #print(station)
+    i = 1
+    for row in ws:
+        if i < 6:
+            i = i + 1
+        else:
+            try:
+                #row[6] can contatin None values which is not comparable to string values
+                #tests if test.value contains none value
+                test = row[6]
+                if test.value < station:
+                    i = i + 1
+                else:
+                    return i
+            except:
+                i = i + 1
+
 if __name__ == '__main__':
 
     #stores list of files to be read in
