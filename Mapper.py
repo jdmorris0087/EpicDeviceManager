@@ -1,11 +1,8 @@
 
 from openpyxl import load_workbook as load, Workbook
-from functions import findRowNumber, insertRow
 
 def findRowNumber(ws, station):
     test = ''
-    #print(rows[i-1])
-    #print(station)
     i = 1
     for row in ws:
         if i < 6:
