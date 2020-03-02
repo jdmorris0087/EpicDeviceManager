@@ -9,17 +9,16 @@ if __name__ == '__main__':
     #stores the row in which each station is in. used to find the row in rowlist
     master = {}
 
-    file = 'MasterSpread/CompInventory.xlsx'
-    #loads master file workbook
-    masterFile = load(filename= file)
-    masterSheet = masterFile.active
-
     #appends files to file list with structure (path, dept, loc, building)
     with open('toBeMappedFiles.txt') as f:
         for line in f:
             fileList.append(line)
 
-    print(fileList)
+    file = fileList.pop(0)
+    #loads master file workbook
+    masterFile = load(filename= file)
+    masterSheet = masterFile.active
+    
     print('Loading Master File')
     #loads info into rowlist and master from master file. info in master file
     #starts in row 6
@@ -28,7 +27,6 @@ if __name__ == '__main__':
         if rowSkip < 6:
             rowSkip = rowSkip + 1
         else:
-            #rowlist.append(row)
             master[row[6].value] = row
 
 
@@ -55,8 +53,8 @@ if __name__ == '__main__':
         fileTarget = file[0]
         deptName = file[1]
         location = file[2]
+        #the last value of line contains carriage return needs to be split
         building = file[3].split('\n')[0]
-        print(building)
 
         print('Loading File: ', file[1])
         # loads tech's file
@@ -100,6 +98,7 @@ if __name__ == '__main__':
 
         for device in devices:
             try:
+                #throws KeyError if not found in Dictionary
                 testIfHasKey = mapKey[device]
             except:
                 #trys to find available key in key list
@@ -117,8 +116,11 @@ if __name__ == '__main__':
                         build[device] = building
                         printer[device] = 'N/A'
                         break
+                    #if x reaches the end of the used keys, it sets noKey to True
                     elif x == len(keyList) - 1:
                        noKey = True
+                #check noKey, if true finds the last value in the sorted list and adds one.
+                #it then updates the values in the other dictionaries for mapping purposes later on.
                 if noKey:
                     key = keyList[-1] + 1
                     mapKey[device] = key
@@ -145,28 +147,27 @@ if __name__ == '__main__':
                 master[device][3].value = loc[device]
                 master[device][5].value = mapKey[device]
                 master[device][22].value = printer[device]
-                #update type of device later in one go due to inserting rows to sheet
+                #update type of device later in one go due to inserting rows to sheet using excel formulas
             except:
                 #device not in master file
                 notInMaster.append(device)
                 print(device, ': not in Master')
 
-        #inserts rows to master file and updates the info with map file data.
-        #updates rowlist to correspond to
+        #inserts rows to master file using index found and updates the info with map file data.
 
+        #sorted so that the entries are added to excel in descending order. keeps row info more consistent
         notInMaster.sort()
         print(notInMaster)
         print('adding devices not in master')
 
         index = 0
-        #print(notInMaster)
-        rowNum = 1
         for device in notInMaster:
             #finds where the device belongs alphabetically
             index = findRowNumber(masterSheet, device)
             print(index, ': ', device)
             #inserts the row above the found row
             masterSheet.insert_rows(index)
+            #adds row to master dictionary for ease of updating
             tempRow = masterSheet[index]
             master[device] = tempRow
 
@@ -176,8 +177,6 @@ if __name__ == '__main__':
             master[device][5].value = mapKey[device]
             master[device][6].value = device
             master[device][22].value = printer[device]
-
-            rowNum = rowNum + 1
 
             #insertRow(rowlist, index, tempRow)
         #for dev in notInMaster:
@@ -199,5 +198,6 @@ if __name__ == '__main__':
                 print('Row: ', typeRow, ' contains merged cells')
         print('Finished')
         print('Saving...')
+        #test file. does not override actual master file. needs to be changed after testing
         masterFile.save('MasterSpread/CompInventoryTestOutput.xlsx')
         print('Saved')
