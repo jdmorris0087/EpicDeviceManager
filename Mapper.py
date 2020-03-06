@@ -1,6 +1,6 @@
-
 from openpyxl import load_workbook as load, Workbook
 
+#finds row in ws given a workstation
 def findRowNumber(ws, station):
     test = ''
     i = 1
@@ -32,10 +32,11 @@ if __name__ == '__main__':
             fileList.append(line)
 
     file = fileList.pop(0)
+    file = file.split('\n')[0]
     #loads master file workbook
     masterFile = load(filename= file)
     masterSheet = masterFile.active
-    
+
     print('Loading Master File')
     #loads info into rowlist and master from master file. info in master file
     #starts in row 6
@@ -66,7 +67,6 @@ if __name__ == '__main__':
         printer = {}
 
         file = line.split(',')
-        print(file)
         fileTarget = file[0]
         deptName = file[1]
         location = file[2]
@@ -89,17 +89,19 @@ if __name__ == '__main__':
         for row in mapSheet:
             key = row[0].value
             station = row[1].value
-            devices.append(station)
             prnt = row[2].value
+            if station not in devices:
+                devices.append(station)
+                dept[station] = deptName
+                build[station] = building
+                loc[station] = location
+                printer[station] = prnt
+                mapKey[station] = key
 
-            dept[station] = deptName
-            build[station] = building
-            loc[station] = location
-            printer[station] = prnt
-            mapKey[station] = key
-
-            if printer[station] not in devices:
-                devices.append(printer[station])
+                if printer[station] not in devices:
+                    devices.append(printer[station])
+            else:
+                pass
 
         print('Finished')
 
@@ -107,10 +109,13 @@ if __name__ == '__main__':
         #resets key variable to zero and then increments until a key is available
         keyList = []
         key = 0
+        noList = False
         for item in mapKey:
             keyList.append(mapKey[item])
-
-        keyList.sort()
+        try:
+            keyList.sort()
+        except:
+            noList = True
         print('adding printers')
 
         for device in devices:
@@ -122,7 +127,8 @@ if __name__ == '__main__':
                 key = 0
                 noKey = False
                 #sorts lists to maintain list numerically
-                keyList.sort()
+                if not noList:
+                    keyList.sort()
                 for x in range(len(keyList)):
                     if x not in keyList:
                         key = x
@@ -174,14 +180,12 @@ if __name__ == '__main__':
 
         #sorted so that the entries are added to excel in descending order. keeps row info more consistent
         notInMaster.sort()
-        print(notInMaster)
         print('adding devices not in master')
 
         index = 0
         for device in notInMaster:
             #finds where the device belongs alphabetically
             index = findRowNumber(masterSheet, device)
-            print(index, ': ', device)
             #inserts the row above the found row
             masterSheet.insert_rows(index)
             #adds row to master dictionary for ease of updating
@@ -206,6 +210,8 @@ if __name__ == '__main__':
                 if typeRow < 6:
                     #print(typeRow, ': skipped')
                     typeRow = typeRow + 1
+                elif row[7].value == 'Cart Workstation':
+                    typeRow = typeRow + 1
                 else:
                     typeFormat = '=IF(ISBLANK($G'+ str(typeRow) +') ,"", IF(OR(ISNUMBER(SEARCH("WSL",$G'+ str(typeRow) +')),ISNUMBER(SEARCH("WSC",$G'+ str(typeRow) +')),ISNUMBER(SEARCH("MFP",$G'+ str(typeRow) +')),ISNUMBER(SEARCH("PRT",$G'+ str(typeRow) +')),ISNUMBER(SEARCH("TC",$G'+ str(typeRow) +'))),IF(OR(ISNUMBER(SEARCH("WSC",$G'+ str(typeRow) +')),ISNUMBER(SEARCH("WSL",$G'+ str(typeRow) +')),ISNUMBER(SEARCH("TC",$G'+ str(typeRow) +'))),IF(ISNUMBER(SEARCH("TC",$G'+ str(typeRow) +')),"Zero","Laptop"),"Printer"),"Workstation"))'
                     #print(typeRow, ': updating')
@@ -213,8 +219,9 @@ if __name__ == '__main__':
                     typeRow = typeRow + 1
             except:
                 print('Row: ', typeRow, ' contains merged cells')
+                typeRow = typeRow + 1
         print('Finished')
         print('Saving...')
         #test file. does not override actual master file. needs to be changed after testing
-        masterFile.save('MasterSpread/CompInventoryTestOutput.xlsx')
+        masterFile.save('\\\\fileserver\\Shares\\Users\\PCTechs\\Nathaniel\\Current Projects\\Epic Inventory\\Epic Computer Inventory.xlsx')
         print('Saved')
